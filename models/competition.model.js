@@ -6,9 +6,11 @@ var competitionSchema = mongoose.Schema({
     },
     total_members_allowed: String,
     already_members_in: String,
+    last_registration_date: Date,
+    last_registration_status: { type: Boolean, default: true},
     fees: String,
     competition_status: { type: Boolean, default: true},
-    result: { type: String, default: 'not decided'} 
+    result: { type: String, default: 'not decided'}
 },{
     timestemps: true
 });

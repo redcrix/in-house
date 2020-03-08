@@ -1,8 +1,10 @@
 const user = require('../../models/user.model');
 const product = require('../../models/product.model');
 const competition = require('../../models/competition.model');
+const participate = require('../../models/participate.model');
 const jwt = require('jsonwebtoken');
-const config = require('../../config/config')
+const config = require('../../config/config');
+
 exports.signup = function(req, res){
     console.log(req.body);
     if(req.body.phone && req.body.email && req.body.lastname && req.body.firstname && req.body.password){
@@ -33,7 +35,7 @@ exports.signup = function(req, res){
                         });
                     } else {
                         return res.json({
-                            message: "user account is created",
+                            message: "user account is created"
                         });
                     }
                 });
@@ -56,7 +58,7 @@ exports.login = function(req, res){
         user.findOne({'email': req.body.email}, function(err, found){
             if (err){
                 return res.json({
-                    error: "Someting went wrong please try again later"
+                    error: "Something went wrong please try again later"
                 });
             }
 
@@ -69,7 +71,7 @@ exports.login = function(req, res){
             if (found.validPassword(req.body.password)){
                 var token = jwt.sign(found.toJSON(), config.secret);
                 return res.json({
-                    message: "LoggdIn",
+                    message: "LoggedIn",
                     user: found,
                     token: token
                 });
@@ -77,7 +79,7 @@ exports.login = function(req, res){
                 return res.json({
                     message: 'Email Or Password Does Not Match.'
                 });
-            }            
+            }
         });
     } else {
         return res.json({
@@ -87,20 +89,24 @@ exports.login = function(req, res){
 }
 
 exports.show_all_product = function(req, res){
-    // jwt.verify(req.token, config.secret, (err)=>{
-    //     return res.json({
-    //         message: "with token"
-    //     });
-    // });
-    product.find( function(err, allproduct){
+    jwt.verify(req.token, config.secret, (err, user)=>{
         if(err){
             return res.json({
-                error: err
-            });           
+                message: err.message,
+            });
         } else {
-            return res.json({
-                message: "all product",
-                product: allproduct
+            product.find( function(err, allproduct){
+                if(err){
+                    return res.json({
+                        error: err
+                    });
+                } else {
+                    return res.json({
+                        message: "all product",
+                        product: allproduct,
+                        user: user
+                    });
+                }
             });
         }
     });
@@ -144,13 +150,13 @@ exports.show_all_competition = function(req, res){
 }
 
 exports.add_competition_details = function(req, res){
-    product.findById(req.body.product_id, function(err, found){
+    product.findById(req.body.product, function(err, found){
         if(err){
             return res.json({
                 error: err
             });
         } else {
-            if(found && found.item_competition){
+            if(found && found.item_competition && !found.item_competition_ongoing){
                 var comp = new competition();
                 comp.product_id = req.body.product;
                 comp.total_members_allowed = req.body.total_members;
@@ -160,31 +166,68 @@ exports.add_competition_details = function(req, res){
                     if(err){
                         return res.json({
                             error: err
-                        }); 
+                        });
                     } else {
-                        return res.json({
-                            competition_detail: saved 
-                        }); 
+                        product.findByIdAndUpdate(req.body.product, {'item_competition_ongoing': true}, {new: true}, function(err, updated){
+                            if(err){
+                                return res.json({
+                                    error: err
+                                });
+                            } else {
+                                return res.json({
+                                    competition_detail: saved
+                                });
+                            }
+                        })
                     }
                 });
             } else {
                 return res.json({
-                    message: "this product is not available for competition. please make sure is available or not",
-                });       
+                    message: "this product is not available for competition or one competition is already on going",
+                });
             }
         }
     });
 }
 
 exports.add_participate_details = function(req, res){
+
+}
+
+exports.add_competitors = function(req, res){
     competition.findById(req.body.competition_id, function(err, found){
         if(err){
             return res.json({
                 error: err
-            });   
+            });
         } else {
-            if(found && found.competition_status){
-                
+            if(found && found.competition_status && found.last_registration_status){
+                var p = new participate();
+                p.product_id = found.product_id;
+                p.competition_id = found._id;
+                p.user_id = req.body.user_id;
+                participate.findOne({user_id: req.body.user_id}, function(err, found){
+                    if(err){
+                        return res.json({
+                            error: err
+                        });
+                    } else if(!found){
+                        p.save(function(err, done){
+                            return res.json({
+                                message: "you are registered",
+                                details: done
+                            });
+                        });
+                    } else {
+                        return res.json({
+                            message: "you are already registered"
+                        });
+                    }
+                });
+            } else {
+                return res.json({
+                    message: "registration is closed"
+                });
             }
         }
     });

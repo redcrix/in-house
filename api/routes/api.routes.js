@@ -14,25 +14,23 @@ function verifyToken(req, res, next) {
       req.token = bearerToken;
       // Next middleware
         next();
-  
     } else {
       // Forbidden
       res.status(401).send({
         code:401,
-        success: false, 
+        success: false,
         message: 'Authentication Token is not valid'
     });
     }
-  
   }
 
 const apis = require('../controller/controller');
 
     app.post('/login', apis.login);
     app.post('/signup', apis.signup);
-    app.get('/product', apis.show_all_product);
+    app.get('/product', verifyToken, apis.show_all_product);
     app.post('/add_product', apis.add_product);
     app.get('/competition', apis.show_all_competition);
     app.post('/add_competition_details', apis.add_competition_details);
-    app.get('/add_competitors', apis.add_competitors);
+    app.post('/add_competitors', apis.add_competitors);
 }

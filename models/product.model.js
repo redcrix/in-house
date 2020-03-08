@@ -4,7 +4,8 @@ var productSchema = mongoose.Schema({
     item_category: String,
     item_price: String,
     item_details: String,
-    item_competition: {type: Boolean, default: false} 
+    item_competition: {type: Boolean, default: false},
+    item_competition_ongoing: { type: Boolean, default: false}
 },{
     timestamps: true
 });
